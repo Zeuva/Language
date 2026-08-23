@@ -1,0 +1,38 @@
+{
+  "packageId": "app.vercel.zeuvastec_language_corrigido_11.twa",
+  "host": "zeuvastec-language-corrigido-11.vercel.app",
+  "name": "Zeuvastec Language",
+  "launcherName": "Zeuvastec",
+  "display": "standalone",
+  "themeColor": "#276246",
+  "backgroundColor": "#f8f5ed",
+  "startUrl": "/",
+  "iconUrl": "https://zeuvastec-language-corrigido-11.vercel.app/icons/icon-512.png",
+  "maskableIconUrl": "https://zeuvastec-language-corrigido-11.vercel.app/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "enableNotifications": true,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://zeuvastec-language-corrigido-11.vercel.app/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": {
+    "playBilling": {
+      "enabled": false
+    },
+    "locationDelegation": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://zeuvastec-language-corrigido-11.vercel.app/",
+  "minSdkVersion": 21,
+  "permissions": [
+    "android.permission.RECORD_AUDIO",
+    "android.permission.MODIFY_AUDIO_SETTINGS"
+  ]
+}
