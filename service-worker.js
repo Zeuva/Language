@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zeuvastec-language-v5-clean-catalog-progress';
+const CACHE_NAME = 'zeuvastec-language-v2-iphone-mic';
 const APP_FILES = [
   './', './index.html', './style.css', './voice.css', './fix.css', './levels.css', './profile.css',
   './home-redesign.css', './flashcard-flip.css', './hero-illustration.css',

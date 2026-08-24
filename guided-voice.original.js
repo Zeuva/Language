@@ -499,7 +499,6 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
   let microphoneStream = null;
   let microphonePermissionChecked = false;
   let isListening = false;
-  let autoListenArmed = false;
   guidedRecognition.lang = 'en-US';
   guidedRecognition.continuous = false;
   guidedRecognition.interimResults = false;
@@ -533,17 +532,9 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
   // Também evitamos reiniciar a escuta sozinha (setTimeout) no iOS, porque o
   // Safari exige um toque direto do usuário para cada início de escuta.
   function maybeAutoListen(delay) {
-    // No iPhone/iPad, o Safari exige uma interação do usuário para iniciar
-    // o reconhecimento. O primeiro toque arma a sessão; depois disso,
-    // cada nova pergunta tenta iniciar o microfone automaticamente.
     if (isIOS) {
-      if (!autoListenArmed) {
-        mic.classList.add('pulse');
-        help.textContent = 'Toque no microfone uma vez para ativar a conversa automática.';
-        return;
-      }
-      mic.classList.remove('pulse');
-      window.setTimeout(startListening, delay);
+      mic.classList.add('pulse');
+      help.textContent = 'Toque no microfone para responder.';
       return;
     }
     if (microphoneStream) window.setTimeout(startListening, delay);
@@ -568,9 +559,6 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
     if (isIOS) microphoneStream = { authorized: true };
     try {
       guidedRecognition.start();
-      // Depois que o usuário autorizou/iniciou o microfone uma vez,
-      // a prática passa a tentar iniciar automaticamente a cada pergunta.
-      if (isIOS) autoListenArmed = true;
     } catch (error) {
       isListening = false;
     }
