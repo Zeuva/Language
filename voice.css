@@ -50,3 +50,15 @@
 .voice-controls p{margin:0;text-align:center;font-size:11px}
 .tutor-state-row{position:relative;z-index:5;margin-top:-4px}
 @media(max-width:700px){.tutor-stage{min-height:335px;padding:10px 10px 0}.tutor-avatar-wrap{height:255px;margin-top:-2px}.tutor-avatar{height:295px;max-width:88%}.tutor-speaking-bars{right:4%;bottom:38px}.tutor-mouth-motion{top:34%;width:25px;height:11px;margin-left:-12px}.voice-controls{margin-top:-34px;padding-bottom:10px}.voice-controls .mic{width:68px;height:68px}.dialogue{height:210px;padding:12px}.tutor-state-row{font-size:10px;padding:6px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+/* V3 — Tutor 3D real com TalkingHead + HeadTTS */
+.tutor-avatar-wrap{height:360px;margin-top:-8px;align-items:stretch}
+.tutor-3d-avatar{position:relative;z-index:3;width:min(100%,560px);height:100%;margin:0 auto;overflow:hidden;border-radius:24px;touch-action:none}
+.tutor-3d-avatar canvas{display:block!important;width:100%!important;height:100%!important;outline:none}
+.tutor-avatar-fallback{position:absolute!important;z-index:2;inset:auto 50% 0 auto;transform:translateX(50%);pointer-events:none;transition:opacity .25s ease}
+.tutor-stage.avatar-3d-ready .tutor-avatar-fallback{opacity:0;visibility:hidden}
+.avatar-3d-loading{position:absolute;z-index:6;left:50%;bottom:16px;transform:translateX(-50%);padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.9);border:1px solid #dce8f5;color:#31506d;font-size:10px;font-weight:700;box-shadow:0 5px 18px rgba(30,72,110,.08)}
+.tutor-stage.avatar-3d-ready .avatar-3d-loading{display:none}
+.tutor-stage[data-state="speaking"] .tutor-3d-avatar{filter:drop-shadow(0 16px 30px rgba(22,140,255,.18))}
+.tutor-stage[data-state="listening"] .tutor-3d-avatar{filter:drop-shadow(0 16px 30px rgba(22,140,255,.22))}
+@media(max-width:700px){.tutor-stage{min-height:400px}.tutor-avatar-wrap{height:325px;margin-top:-4px}.tutor-3d-avatar{width:100%;height:100%;border-radius:20px}.tutor-avatar-fallback{height:315px}.voice-controls{margin-top:-42px;position:relative;z-index:10}.voice-controls .mic{width:72px;height:72px}}
