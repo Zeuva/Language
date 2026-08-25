@@ -30,6 +30,8 @@ let headtts = null;
 let ready = false;
 let initialized = false;
 let speechCallback = null;
+let configuredRate = null;
+let speechEndTimer = null;
 
 function setLoading(text, visible = true) {
   if (!loading) return;
@@ -112,7 +114,11 @@ async function initTTS() {
   });
 
   headtts.onstart = () => setState('speaking');
-  headtts.onend = () => setState('normal');
+  headtts.onend = () => {
+    // HeadTTS onend marks synthesis completion, not necessarily the end of
+    // playback. The actual listening transition is scheduled from the
+    // viseme/word duration in the audio message below.
+  };
   headtts.onerror = (err) => {
     console.error('[Zeuvastec Maya] HeadTTS error', err);
     setState('normal');
@@ -126,7 +132,26 @@ async function initTTS() {
       try {
         // HeadTTS returns the audio object already containing words + visemes + timestamps.
         // TalkingHead synchronizes the entire facial animation to the audio clock.
-        head.speakAudio(message.data, {}, () => {});
+        const audioData = message.data;
+        head.speakAudio(audioData, {}, () => {});
+
+        // Schedule the callback for the end of the actual spoken audio.
+        // This avoids opening the microphone while Maya is still speaking.
+        if (speechEndTimer) clearTimeout(speechEndTimer);
+        const wtimes = Array.isArray(audioData?.wtimes) ? audioData.wtimes : [];
+        const wdurations = Array.isArray(audioData?.wdurations) ? audioData.wdurations : [];
+        const vtimes = Array.isArray(audioData?.vtimes) ? audioData.vtimes : [];
+        const vdurations = Array.isArray(audioData?.vdurations) ? audioData.vdurations : [];
+        const wordEnd = wtimes.length ? Math.max(...wtimes.map((t,i)=>Number(t||0)+Number(wdurations[i]||0))) : 0;
+        const visemeEnd = vtimes.length ? Math.max(...vtimes.map((t,i)=>Number(t||0)+Number(vdurations[i]||0))) : 0;
+        const estimatedMs = Math.max(wordEnd, visemeEnd, 250);
+        speechEndTimer = setTimeout(() => {
+          speechEndTimer = null;
+          setState('normal');
+          const cb = speechCallback;
+          speechCallback = null;
+          if (cb) cb();
+        }, estimatedMs + 120);
       } catch (err) {
         console.error('[Zeuvastec Maya] speakAudio error', err);
         setState('normal');
@@ -162,13 +187,20 @@ window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
   try {
     speechCallback = options.onEnd || null;
     setState('thinking');
+    if (speechEndTimer) { clearTimeout(speechEndTimer); speechEndTimer = null; }
     headtts.clear();
-    await headtts.setup({
-      voice: CONFIG.voice,
-      language: CONFIG.language,
-      speed: Math.max(0.65, Math.min(1.15, options.rate || 0.92)),
-      audioEncoding: 'wav'
-    });
+    const requestedRate = Math.max(0.65, Math.min(1.15, Number(options.rate || 0.95)));
+    // Reconfigure only when the requested speed actually changes. Re-running
+    // setup for every sentence was the main source of the audible delay.
+    if (configuredRate !== requestedRate) {
+      await headtts.setup({
+        voice: CONFIG.voice,
+        language: CONFIG.language,
+        speed: requestedRate,
+        audioEncoding: 'wav'
+      });
+      configuredRate = requestedRate;
+    }
     headtts.synthesize({ input: String(text).slice(0, 500) });
   } catch (err) {
     console.error('[Zeuvastec Maya] synthesis error', err);
@@ -182,6 +214,7 @@ window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
 window.ZEUVASTEC_AVATAR_STOP = () => {
   try { head?.stopSpeaking?.(); } catch (e) {}
   try { headtts?.clear?.(); } catch (e) {}
+  if (speechEndTimer) { clearTimeout(speechEndTimer); speechEndTimer = null; }
   setState('normal');
   const cb = speechCallback;
   speechCallback = null;

@@ -592,7 +592,12 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
       window.setTimeout(startListening, delay);
       return;
     }
-    if (microphoneStream) window.setTimeout(startListening, delay);
+    // Fora do iOS, a própria primeira tentativa pode solicitar a permissão
+    // do microfone e, depois de autorizada, todas as perguntas voltam a
+    // iniciar a escuta automaticamente. A versão anterior só chamava
+    // startListening quando microphoneStream já existia, o que fazia o
+    // modo automático parar de funcionar em novas sessões.
+    window.setTimeout(startListening, delay);
   }
 
   async function startListening() {
