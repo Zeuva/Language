@@ -95,3 +95,66 @@
 .tutor-stage[data-state="speaking"] .tutor-3d-avatar canvas{filter:drop-shadow(0 12px 25px rgba(13,140,255,.16))}
 @media(max-width:700px){.tutor-stage{min-height:430px}.tutor-avatar-wrap{height:350px}.tutor-3d-avatar{height:350px}.voice-controls{margin-top:-54px;position:relative;z-index:20}.voice-controls .mic{width:74px;height:74px}}
 .tutor-stage.avatar-3d-error .tutor-3d-avatar{opacity:1!important;visibility:visible!important}
+
+/* V6 — Maya realistic TalkingHead layout */
+.tutor-stage{
+  background:linear-gradient(180deg,#ffffff 0%,#f7fbff 62%,#eef7ff 100%);
+  border:1px solid #dbeaf6;
+  box-shadow:0 14px 36px rgba(28,76,112,.10);
+  overflow:visible;
+}
+.tutor-avatar-wrap{
+  height:390px;
+  margin-top:-8px;
+  align-items:stretch;
+}
+.tutor-3d-avatar{
+  width:min(100%,640px);
+  height:100%;
+  border-radius:22px;
+  background:transparent!important;
+  overflow:hidden;
+  z-index:3;
+}
+.tutor-3d-avatar canvas{
+  width:100%!important;
+  height:100%!important;
+  display:block!important;
+  background:transparent!important;
+}
+.tutor-glow{
+  width:360px;
+  height:110px;
+  bottom:6px;
+  background:#8fd4ff;
+  opacity:.18;
+  filter:blur(28px);
+}
+.avatar-engine-badge{
+  background:#f0f8ff;
+  border-color:#d5eaf9;
+  color:#17669e;
+}
+.voice-controls{
+  position:relative;
+  z-index:30;
+  margin-top:-36px;
+  padding-bottom:10px;
+}
+.voice-controls .mic{
+  width:76px;
+  height:76px;
+  box-shadow:0 8px 24px rgba(13,140,255,.24);
+}
+.tutor-state-row{
+  position:relative;
+  z-index:12;
+}
+@media(max-width:700px){
+  .tutor-stage{min-height:430px;padding:10px 8px 0}
+  .tutor-avatar-wrap{height:345px;margin-top:-4px}
+  .tutor-3d-avatar{height:345px;width:100%;border-radius:18px}
+  .voice-controls{margin-top:-50px;padding-bottom:8px}
+  .voice-controls .mic{width:74px;height:74px}
+  .dialogue{margin-top:4px}
+}
