@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Zeuvastec Language — Inglês todos os dias</title>
-  <meta name="theme-color" content="#276246" />
+  <meta name="theme-color" content="#0d8cff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Zeuvastec" />
@@ -75,10 +75,20 @@
       <div class="level-selector" aria-label="Escolha o nível de conversa"><button class="level-choice active" data-level="basic">Básico</button><button class="level-choice" data-level="intermediate">Intermediário</button><button class="level-choice" data-level="advanced">Avançado</button></div>
       <section class="voice-room">
         <div class="voice-top"><span class="live-dot"></span><span id="voice-status">Tutor pronto para conversar</span><button class="level-button" id="scenario-button">Cenário: Café ▾</button></div>
-        <div class="dialogue" id="dialogue" aria-live="polite">
-          <article class="message tutor"><span class="speaker">Z</span><div><small>TUTOR</small><p>Hello! Welcome to the café. What would you like to drink?</p><button class="mini-listen" data-say="Hello! Welcome to the café. What would you like to drink?">🔊 Ouvir</button></div></article>
+        <div class="tutor-stage" id="tutor-stage" aria-label="Tutor Alex, tutor de inglês com voz masculina">
+          <div class="tutor-identity"><div class="tutor-mini-avatar"><img src="avatar-alex.png" alt="Tutor Alex"></div><div><strong>Tutor Alex</strong><span id="avatar-state-label">Pronto para conversar</span></div><span class="tutor-online"><i></i> Online</span></div>
+          <div class="tutor-avatar-wrap" id="tutor-avatar-wrap">
+            <div class="tutor-glow"></div>
+            <img class="tutor-avatar" id="tutor-avatar" src="avatar-alex.png" alt="Tutor Alex, seu tutor de inglês">
+            <span class="tutor-mouth-motion" aria-hidden="true"></span>
+            <div class="tutor-speaking-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="tutor-state-row"><span id="tutor-state-icon">🙂</span><span id="tutor-state-text">Tutor Alex está pronto. Toque no microfone para começar.</span></div>
         </div>
-        <div class="voice-controls"><button class="mic" id="mic-button" aria-label="Falar com o tutor"><span>🎤</span></button><p id="mic-help">Toque no microfone e diga sua resposta em inglês.</p></div>
+        <div class="dialogue" id="dialogue" aria-live="polite">
+          <article class="message tutor"><span class="speaker tutor-avatar-badge"><img src="avatar-alex.png" alt=""></span><div><small>TUTOR ALEX · VOZ MASCULINA</small><p>Hello! Welcome to the café. What would you like to drink?</p><button class="mini-listen" data-say="Hello! Welcome to the café. What would you like to drink?">🔊 Ouvir</button></div></article>
+        </div>
+        <div class="voice-controls" id="voice-controls"><button class="mic" id="mic-button" aria-label="Falar com o tutor"><span>🎤</span></button><p id="mic-help">Toque no microfone e diga sua resposta em inglês.</p></div>
         <div class="voice-tip"><span>✦</span><p><strong>Dica:</strong> <button id="voice-tip-example" data-say="I would like a coffee, please.">“I would like a coffee, please.”</button><br><small id="voice-tip-translation">Tradução: “Eu gostaria de um café, por favor.”</small></p></div>
       </section>
     </section>

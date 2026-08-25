@@ -1,12 +1,14 @@
 
-// VOICE FIX - EN vs PT separado, mantendo microfone funcionando
-let voiceCacheFix={en:[],pt:[]}; let vReady=false;
-function refreshVFix(){ try{ const all=speechSynthesis.getVoices(); if(!all.length) return; vReady=true; voiceCacheFix.en=all.filter(v=>v.lang.toLowerCase().startsWith('en')); voiceCacheFix.pt=all.filter(v=>v.lang.toLowerCase().startsWith('pt')); voiceCacheFix.en.sort((a,b)=>{ const aS=(a.lang==='en-US'?10:0)+(a.name.includes('Google')?5:0); const bS=(b.lang==='en-US'?10:0)+(b.name.includes('Google')?5:0); return bS-aS; }); voiceCacheFix.pt.sort((a,b)=>{ const aS=(a.lang==='pt-BR'?10:0)+(a.name.includes('Google')?5:0); const bS=(b.lang==='pt-BR'?10:0)+(b.name.includes('Google')?5:0); return bS-aS; }); }catch(e){} }
+// VOICE FIX + AVATAR: mantém uma única voz masculina para o Tutor Alex.
+let voiceCacheFix={en:[],pt:[]}; let vReady=false; let tutorEnglishVoiceFix=null;
+function refreshVFix(){ try{ const all=speechSynthesis.getVoices(); if(!all.length) return; vReady=true; voiceCacheFix.en=all.filter(v=>v.lang.toLowerCase().startsWith('en')); voiceCacheFix.pt=all.filter(v=>v.lang.toLowerCase().startsWith('pt')); if(!tutorEnglishVoiceFix) tutorEnglishVoiceFix=pickMaleTutorVoice(voiceCacheFix.en); }catch(e){} }
+function pickMaleTutorVoice(list){ const male=['alex','david','mark','daniel','george','james','guy','fred','tom','aaron','ryan','michael','male','microsoft david','microsoft mark']; const female=['zira','samantha','victoria','karen','susan','hazel','female','ava','aria','jenny','sarah','linda']; const candidates=(list||[]).filter(v=>!female.some(h=>v.name.toLowerCase().includes(h))); return candidates.find(v=>male.some(h=>v.name.toLowerCase().includes(h))) || candidates.find(v=>v.lang.toLowerCase()==='en-us') || candidates.find(v=>v.lang.toLowerCase().startsWith('en')) || null; }
 refreshVFix(); if(speechSynthesis.onvoiceschanged!==undefined){ speechSynthesis.onvoiceschanged=refreshVFix; setTimeout(refreshVFix,500); setTimeout(refreshVFix,1500); }
-function getENFix(){ if(!vReady) refreshVFix(); return voiceCacheFix.en.find(v=>v.lang==='en-US')||voiceCacheFix.en[0]||null; }
+function getENFix(){ if(!vReady) refreshVFix(); if(!tutorEnglishVoiceFix) tutorEnglishVoiceFix=pickMaleTutorVoice(voiceCacheFix.en); return tutorEnglishVoiceFix; }
 function getPTFix(){ if(!vReady) refreshVFix(); return voiceCacheFix.pt.find(v=>v.lang==='pt-BR')||voiceCacheFix.pt[0]||null; }
-function speakENFix(t,r=0.9,o){ if(!t) return; if(typeof soundOn!=='undefined' && !soundOn) return; speechSynthesis.cancel(); setTimeout(()=>{ const u=new SpeechSynthesisUtterance(t); u.lang='en-US'; u.rate=r; const v=getENFix(); if(v) u.voice=v; if(o) u.onend=o; speechSynthesis.speak(u); },80); }
-function speakPTFix(t,r=1,o){ if(!t) return; if(typeof soundOn!=='undefined' && !soundOn) return; const isPureEN=/^[A-Za-z0-9 .,!?'"-]+$/.test(t) && !/[áàâãéêíóôõúç]/.test(t) && /\b(hello|my name|I am|would like|coffee|please|thank you|good morning|how are you|welcome to the café|what would you like)\b/i.test(t); if(isPureEN){ speakENFix(t,r,o); return; } speechSynthesis.cancel(); setTimeout(()=>{ const u=new SpeechSynthesisUtterance(t); u.lang='pt-BR'; u.rate=r; const v=getPTFix(); if(v) u.voice=v; if(o) u.onend=o; speechSynthesis.speak(u); },80); }
+function setTutorStateFix(state){ if(typeof tutorAvatarSetState==='function') tutorAvatarSetState(state); else { const el=document.getElementById('tutor-stage'); if(el) el.dataset.state=state; } }
+function speakENFix(t,r=0.9,o){ if(!t) return; if(typeof soundOn!=='undefined' && !soundOn) return; speechSynthesis.cancel(); setTutorStateFix('speaking'); setTimeout(()=>{ const u=new SpeechSynthesisUtterance(t); u.lang='en-US'; u.rate=r; u.pitch=0.9; const v=getENFix(); if(v) u.voice=v; u.onstart=()=>setTutorStateFix('speaking'); u.onend=()=>{ setTutorStateFix('normal'); if(o) o(); }; u.onerror=()=>{ setTutorStateFix('normal'); if(o) o(); }; speechSynthesis.speak(u); },80); }
+function speakPTFix(t,r=1,o){ if(!t) return; if(typeof soundOn!=='undefined' && !soundOn) return; const isPureEN=/^[A-Za-z0-9 .,!?\'"-]+$/.test(t) && !/[áàâãéêíóôõúç]/.test(t) && /\b(hello|my name|I am|would like|coffee|please|thank you|good morning|how are you|welcome to the café|what would you like)\b/i.test(t); if(isPureEN){ speakENFix(t,r,o); return; } speechSynthesis.cancel(); setTimeout(()=>{ const u=new SpeechSynthesisUtterance(t); u.lang='pt-BR'; u.rate=r; const v=getPTFix(); if(v) u.voice=v; if(o) u.onend=o; speechSynthesis.speak(u); },80); }
 window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakBilingual=(en,pt)=>{ speakENFix(en,0.9,()=>{ setTimeout(()=> speakPTFix(pt,1.0),600); }); }; function speakSlowFix(t){ speakENFix(t,0.55); } window.speakSlow=speakSlowFix;
 
 /* Guided speaking exercise: several conversation scenarios per level, checks a spoken answer, corrects it, and moves ahead. */
@@ -464,6 +466,7 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
       if (attemptsThisQuestion === 0) sessionStats.firstTryCorrect += 1;
       const combined = `${pickRandom(praises)} ${reactToAnswer(transcript)}`;
       message(combined, 'tutor');
+      if(typeof tutorAvatarSetState==='function') tutorAvatarSetState('positive');
       say(combined, () => window.setTimeout(askNext, 350));
       currentStep += 1;
       help.textContent = 'Resposta correta! A próxima pergunta será iniciada automaticamente…';
@@ -472,6 +475,7 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
       if (!sessionStats.reviewPhrases.includes(step.example)) sessionStats.reviewPhrases.push(step.example);
       const correction = `${pickRandom(correctionOpeners)} ${step.example}`;
       message(correction, 'tutor');
+      if(typeof tutorAvatarSetState==='function') tutorAvatarSetState('correction');
       say(correction, () => {
         maybeAutoListen(450);
       });
@@ -519,6 +523,7 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
     }
     mic.classList.add('listening');
     status.textContent = 'Ouvindo sua resposta…';
+    if(typeof tutorAvatarSetState==='function') tutorAvatarSetState('listening');
     help.textContent = 'Fale a frase em inglês.';
   };
   guidedRecognition.onresult = (event) => {
@@ -530,6 +535,7 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
   guidedRecognition.onerror = (event) => {
     isListening = false;
     mic.classList.remove('listening');
+    if(typeof tutorAvatarSetState==='function') tutorAvatarSetState('normal');
     status.textContent = 'Não consegui ouvir';
     if (isIOS) {
       help.textContent = `O reconhecimento de voz do iPhone/iPad é instável (erro: ${event.error || 'desconhecido'}). Verifique Ajustes > Safari > Microfone, ou toque no microfone para tentar de novo.`;
@@ -563,6 +569,7 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
     }
 
     mic.classList.remove('listening');
+    if(typeof tutorAvatarSetState==='function') tutorAvatarSetState('normal');
     recognitionRestartCount = 0;
   };
 
@@ -615,6 +622,11 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
     }
   }
   mic.onclick = () => {
+    // Mantém o tutor visível quando a conversa é iniciada no celular.
+    const stage = document.getElementById('tutor-stage');
+    if (stage && window.matchMedia('(max-width: 700px)').matches) {
+      stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     startListening();
   };
 }());
