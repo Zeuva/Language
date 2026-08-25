@@ -11,13 +11,21 @@ document.querySelectorAll('.nav-item').forEach((button) => {
 
 document.addEventListener('click', (event) => {
   const speakButton = event.target.closest('[data-say]');
-  if (speakButton && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(speakButton.dataset.say);
-    utterance.lang = 'en-US';
-    const englishVoice = window.speechSynthesis.getVoices().find((voice) => /^en(-|_)/i.test(voice.lang));
-    if (englishVoice) utterance.voice = englishVoice;
-    window.speechSynthesis.speak(utterance);
+  if (speakButton) {
+    if (typeof window.ZEUVASTEC_AVATAR_SPEAK === 'function' && window.ZEUVASTEC_AVATAR_READY) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      window.ZEUVASTEC_AVATAR_SPEAK(speakButton.dataset.say, { rate: 0.9 });
+      return;
+    }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(speakButton.dataset.say);
+      utterance.lang = 'en-US';
+      const englishVoice = window.speechSynthesis.getVoices().find((voice) => /^en(-|_)/i.test(voice.lang));
+      if (englishVoice) utterance.voice = englishVoice;
+      window.speechSynthesis.speak(utterance);
+    }
   }
 });
 

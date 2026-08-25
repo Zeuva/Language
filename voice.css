@@ -85,3 +85,13 @@
 }
 .avatar-engine-badge{position:relative;z-index:4;text-align:center;margin:7px auto 0;width:max-content;max-width:92%;padding:5px 10px;border-radius:999px;background:#eef8ff;border:1px solid #d6ebfb;color:#17669e;font-size:9px;font-weight:800;letter-spacing:.02em}
 .tutor-stage.avatar-3d-error .avatar-engine-badge{background:#fff4f4;border-color:#ffd4d4;color:#a33a3a}
+
+/* V5 — procedural 3D Tutor Alex: never use a static photo as the talking avatar */
+.tutor-stage[data-is-talking-photo="false"] .tutor-3d-avatar{opacity:1!important;visibility:visible!important}
+.tutor-3d-avatar{background:radial-gradient(circle at 50% 18%,#ffffff 0%,#f7fbff 52%,#eaf5ff 100%);min-height:100%;}
+.tutor-3d-avatar canvas{display:block;width:100%;height:100%;outline:none;}
+.tutor-stage.avatar-3d-ready .avatar-3d-loading{display:none}
+.tutor-stage[data-state="thinking"] .tutor-3d-avatar canvas{filter:brightness(.99)}
+.tutor-stage[data-state="speaking"] .tutor-3d-avatar canvas{filter:drop-shadow(0 12px 25px rgba(13,140,255,.16))}
+@media(max-width:700px){.tutor-stage{min-height:430px}.tutor-avatar-wrap{height:350px}.tutor-3d-avatar{height:350px}.voice-controls{margin-top:-54px;position:relative;z-index:20}.voice-controls .mic{width:74px;height:74px}}
+.tutor-stage.avatar-3d-error .tutor-3d-avatar{opacity:1!important;visibility:visible!important}
