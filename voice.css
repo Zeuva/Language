@@ -62,3 +62,26 @@
 .tutor-stage[data-state="speaking"] .tutor-3d-avatar{filter:drop-shadow(0 16px 30px rgba(22,140,255,.18))}
 .tutor-stage[data-state="listening"] .tutor-3d-avatar{filter:drop-shadow(0 16px 30px rgba(22,140,255,.22))}
 @media(max-width:700px){.tutor-stage{min-height:400px}.tutor-avatar-wrap{height:325px;margin-top:-4px}.tutor-3d-avatar{width:100%;height:100%;border-radius:20px}.tutor-avatar-fallback{height:315px}.voice-controls{margin-top:-42px;position:relative;z-index:10}.voice-controls .mic{width:72px;height:72px}}
+
+
+/* V4 — Avatar 3D only: no static talking-photo fallback */
+.tutor-stage[data-is-talking-photo="false"] .tutor-avatar-fallback,
+.tutor-stage[data-is-talking-photo="false"] > .tutor-avatar,
+.tutor-avatar-fallback{display:none!important}
+.tutor-3d-avatar{background:linear-gradient(180deg,#ffffff 0%,#f5faff 100%);min-height:100%;}
+.tutor-3d-avatar canvas{will-change:transform;}
+.tutor-stage.avatar-3d-ready .tutor-3d-avatar{opacity:1;visibility:visible}
+.tutor-stage.avatar-3d-error .tutor-3d-avatar{opacity:.18}
+.tutor-stage[data-state="speaking"] .tutor-3d-avatar{filter:drop-shadow(0 18px 34px rgba(13,140,255,.24));}
+.tutor-stage[data-state="listening"] .tutor-3d-avatar{filter:drop-shadow(0 18px 34px rgba(13,140,255,.20));}
+.avatar-3d-loading{z-index:20;max-width:90%;text-align:center}
+@media(max-width:700px){
+  .tutor-stage{min-height:430px;padding:8px 8px 0}
+  .tutor-avatar-wrap{height:355px;margin-top:-2px}
+  .tutor-3d-avatar{height:355px;width:100%;border-radius:18px}
+  .voice-controls{margin-top:-58px;position:relative;z-index:20}
+  .voice-controls .mic{width:74px;height:74px}
+  .tutor-state-row{position:relative;z-index:21;margin-top:0}
+}
+.avatar-engine-badge{position:relative;z-index:4;text-align:center;margin:7px auto 0;width:max-content;max-width:92%;padding:5px 10px;border-radius:999px;background:#eef8ff;border:1px solid #d6ebfb;color:#17669e;font-size:9px;font-weight:800;letter-spacing:.02em}
+.tutor-stage.avatar-3d-error .avatar-engine-badge{background:#fff4f4;border-color:#ffd4d4;color:#a33a3a}
