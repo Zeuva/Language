@@ -222,13 +222,15 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
     }
   };
 
+  // O elogio fica no final da frase para não parecer que o tutor
+  // está avaliando antes de terminar o comentário.
   const praises = [
-    'Excellent! That was very clear.',
-    'Perfect! Great sentence.',
-    'Nice job! Your English sounds natural.',
-    'Well done! Let\'s keep going.',
-    'Great answer! You are improving fast.',
-    'Awesome! That sounded very natural.'
+    'That was very clear. Excellent!',
+    'That was a great sentence. Perfect!',
+    'Your English sounds natural. Nice job!',
+    'Let\'s keep going. Well done!',
+    'You are improving fast. Great answer!',
+    'That sounded very natural. Awesome!'
   ];
   const correctionOpeners = [
     'Almost! Try saying:',
@@ -500,17 +502,27 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
   let microphonePermissionChecked = false;
   let isListening = false;
   let autoListenArmed = false;
+  let recognitionGotResult = false;
+  let recognitionRestartTimer = null;
+  let recognitionRestartCount = 0;
   guidedRecognition.lang = 'en-US';
   guidedRecognition.continuous = false;
   guidedRecognition.interimResults = false;
   guidedRecognition.maxAlternatives = 1;
   guidedRecognition.onstart = () => {
     isListening = true;
+    recognitionGotResult = false;
+    recognitionRestartCount = 0;
+    if (recognitionRestartTimer) {
+      clearTimeout(recognitionRestartTimer);
+      recognitionRestartTimer = null;
+    }
     mic.classList.add('listening');
     status.textContent = 'Ouvindo sua resposta…';
     help.textContent = 'Fale a frase em inglês.';
   };
   guidedRecognition.onresult = (event) => {
+    recognitionGotResult = true;
     const transcript = event.results[0][0].transcript;
     if (aiChatActive) assessWithAI(transcript);
     else assess(transcript);
@@ -525,7 +537,34 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
       help.textContent = `Verifique a permissão do microfone e tente outra vez. (erro: ${event.error || 'desconhecido'})`;
     }
   };
-  guidedRecognition.onend = () => { isListening = false; mic.classList.remove('listening'); };
+  guidedRecognition.onend = () => {
+    isListening = false;
+
+    // Alguns navegadores encerram o reconhecimento quando o usuário fica
+    // alguns segundos em silêncio. Nesse caso, não desligamos o microfone
+    // visualmente: reiniciamos a escuta automaticamente e mantemos o botão
+    // vermelho até que exista uma resposta ou ocorra um erro real.
+    const canKeepListening = !recognitionGotResult
+      && !aiChatActive
+      && currentStep < steps.length
+      && !isIOS
+      && microphoneStream;
+
+    if (canKeepListening && recognitionRestartCount < 8) {
+      recognitionRestartCount += 1;
+      mic.classList.add('listening');
+      status.textContent = 'Ouvindo sua resposta…';
+      help.textContent = 'Continue falando em inglês.';
+      recognitionRestartTimer = window.setTimeout(() => {
+        recognitionRestartTimer = null;
+        startListening();
+      }, 250);
+      return;
+    }
+
+    mic.classList.remove('listening');
+    recognitionRestartCount = 0;
+  };
 
   // No iOS/iPadOS, pedir getUserMedia e depois iniciar o SpeechRecognition
   // separadamente é um padrão conhecido por travar o reconhecimento no Safari.
