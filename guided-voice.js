@@ -7,9 +7,9 @@ refreshVFix(); if(speechSynthesis.onvoiceschanged!==undefined){ speechSynthesis.
 function getENFix(){ if(!vReady) refreshVFix(); if(!tutorEnglishVoiceFix) tutorEnglishVoiceFix=pickMaleTutorVoice(voiceCacheFix.en); return tutorEnglishVoiceFix; }
 function getPTFix(){ if(!vReady) refreshVFix(); return voiceCacheFix.pt.find(v=>v.lang==='pt-BR')||voiceCacheFix.pt[0]||null; }
 function setTutorStateFix(state){ if(typeof tutorAvatarSetState==='function') tutorAvatarSetState(state); else { const el=document.getElementById('tutor-stage'); if(el) el.dataset.state=state; } }
-function speakENFix(t,r=0.9,o){ if(!t) return; if(typeof soundOn!=='undefined' && !soundOn) return; if(typeof window.ZEUVASTEC_AVATAR_SPEAK==='function'){ setTutorStateFix('speaking'); window.ZEUVASTEC_AVATAR_SPEAK(t,{rate:r,onEnd:()=>{setTutorStateFix('normal');if(o)o();}}); return; } speechSynthesis.cancel(); setTutorStateFix('speaking'); setTimeout(()=>{ const u=new SpeechSynthesisUtterance(t); u.lang='en-US'; u.rate=r; u.pitch=0.9; const v=getENFix(); if(v) u.voice=v; u.onstart=()=>setTutorStateFix('speaking'); u.onend=()=>{setTutorStateFix('normal'); if(o) o();}; u.onerror=()=>{setTutorStateFix('normal'); if(o) o();}; speechSynthesis.speak(u); },80); }
+function speakENFix(t,r=1.05,o){ if(!t) return; if(typeof soundOn!=='undefined' && !soundOn) return; if(typeof window.ZEUVASTEC_AVATAR_SPEAK==='function'){ setTutorStateFix('speaking'); window.ZEUVASTEC_AVATAR_SPEAK(t,{rate:r,onEnd:()=>{setTutorStateFix('normal');if(o)o();}}); return; } speechSynthesis.cancel(); setTutorStateFix('speaking'); setTimeout(()=>{ const u=new SpeechSynthesisUtterance(t); u.lang='en-US'; u.rate=r; u.pitch=0.9; const v=getENFix(); if(v) u.voice=v; u.onstart=()=>setTutorStateFix('speaking'); u.onend=()=>{setTutorStateFix('normal'); if(o) o();}; u.onerror=()=>{setTutorStateFix('normal'); if(o) o();}; speechSynthesis.speak(u); },80); }
 function speakPTFix(t,r=1,o){ if(!t) return; if(typeof soundOn!=='undefined' && !soundOn) return; const isPureEN=/^[A-Za-z0-9 .,!?\'"-]+$/.test(t) && !/[áàâãéêíóôõúç]/.test(t) && /\b(hello|my name|I am|would like|coffee|please|thank you|good morning|how are you|welcome to the café|what would you like)\b/i.test(t); if(isPureEN){ speakENFix(t,r,o); return; } speechSynthesis.cancel(); setTimeout(()=>{ const u=new SpeechSynthesisUtterance(t); u.lang='pt-BR'; u.rate=r; const v=getPTFix(); if(v) u.voice=v; if(o) u.onend=o; speechSynthesis.speak(u); },80); }
-window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakBilingual=(en,pt)=>{ speakENFix(en,0.9,()=>{ setTimeout(()=> speakPTFix(pt,1.0),600); }); }; function speakSlowFix(t){ speakENFix(t,0.55); } window.speakSlow=speakSlowFix;
+window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakBilingual=(en,pt)=>{ speakENFix(en,1.0,()=>{ setTimeout(()=> speakPTFix(pt,1.0),600); }); }; function speakSlowFix(t){ speakENFix(t,0.55); } window.speakSlow=speakSlowFix;
 
 /* Guided speaking exercise: several conversation scenarios per level, checks a spoken answer, corrects it, and moves ahead. */
 (function () {
@@ -381,7 +381,7 @@ window.speakEnglish=speakENFix; window.speakPortuguese=speakPTFix; window.speakB
     });
   }
 
-  function say(text, afterSpeaking) { speakENFix(text, 0.9, afterSpeaking); }
+  function say(text, afterSpeaking) { speakENFix(text, 1.0, afterSpeaking); }
 
   function message(text, who) {
     const item = document.createElement('article');

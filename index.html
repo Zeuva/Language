@@ -86,8 +86,11 @@
           <div class="tutor-state-row"><span id="tutor-state-icon">🙂</span><span id="tutor-state-text">Maya está pronta. Toque no microfone para começar.</span></div>
           <div class="avatar-engine-badge" id="avatar-engine-badge">Avatar 3D realista · Lip-sync por áudio · Face completa</div>
         </div>
-        <div class="dialogue" id="dialogue" aria-live="polite">
+        <div class="conversation-panel">
+          <div class="conversation-panel-title"><strong>Conversa com Maya</strong><span id="conversation-live">Ao vivo</span></div>
+          <div class="dialogue" id="dialogue" aria-live="polite">
           <article class="message tutor"><span class="speaker tutor-avatar-badge"><img src="maya-mini.png" alt=""></span><div><small>MAYA · VOZ FEMININA</small><p>Hello! Welcome to the café. What would you like to drink?</p><button class="mini-listen" data-say="Hello! Welcome to the café. What would you like to drink?">🔊 Ouvir</button></div></article>
+          </div>
         </div>
         <div class="voice-controls" id="voice-controls"><button class="mic" id="mic-button" aria-label="Falar com o tutor"><span>🎤</span></button><p id="mic-help">Toque no microfone e diga sua resposta em inglês.</p></div>
         <div class="voice-tip"><span>✦</span><p><strong>Dica:</strong> <button id="voice-tip-example" data-say="I would like a coffee, please.">“I would like a coffee, please.”</button><br><small id="voice-tip-translation">Tradução: “Eu gostaria de um café, por favor.”</small></p></div>
@@ -130,6 +133,7 @@
   <script src="pwa.js"></script>
   <script src="profile.js"></script>
   <script src="audio-unlock.js"></script>
+  <script src="mobile-conversation-fix.js"></script>
   <script src="sound-fix.js"></script>
   <script src="simulador-bank.js"></script>
   <!-- removido conflito -->

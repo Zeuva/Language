@@ -172,7 +172,7 @@ async function initTTS() {
   await headtts.setup({
     voice: CONFIG.voice,
     language: CONFIG.language,
-    speed: 0.92,
+    speed: 1.0,
     audioEncoding: 'wav'
   });
 }
@@ -188,8 +188,10 @@ window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
     speechCallback = options.onEnd || null;
     setState('thinking');
     if (speechEndTimer) { clearTimeout(speechEndTimer); speechEndTimer = null; }
-    headtts.clear();
-    const requestedRate = Math.max(0.65, Math.min(1.15, Number(options.rate || 0.95)));
+    // Não reinicializa o motor a cada frase: isso causava a pausa perceptível
+    // antes da Maya começar a falar. O setup inicial já deixa o motor pronto.
+    const requestedRate = Math.max(0.65, Math.min(1.15, Number(options.rate || 1.0)));
+    try { headtts.clear(); } catch (e) {}
     // Reconfigure only when the requested speed actually changes. Re-running
     // setup for every sentence was the main source of the audible delay.
     if (configuredRate !== requestedRate) {
