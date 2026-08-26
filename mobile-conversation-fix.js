@@ -12,8 +12,9 @@
   let lastTouch = 0;
   const keepAvatarVisible = () => {
     if(!stage || !matchMedia('(max-width:700px)').matches) return;
-    const room = stage.closest('.voice-room');
-    if(room) room.scrollIntoView({block:'nearest', behavior:'smooth'});
+    // Keep the current viewport stable; the microphone and Avatar are already
+    // composed in the same mobile panel. Scrolling here caused visible jumps.
+    return;
   };
 
   mic.addEventListener('pointerup', (e)=>{

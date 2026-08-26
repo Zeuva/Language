@@ -11,7 +11,7 @@ const CONFIG = Object.freeze({
   full_facial_animation: true,
   audio_driven_lipsync: true,
   head_idle_animation: true,
-  model_fps: 60,
+  model_fps: 30,
   voice: 'af_bella',
   language: 'en-us',
   // Temporary public demo model with ARKit + Oculus visemes. Replace later
@@ -21,6 +21,7 @@ const CONFIG = Object.freeze({
 window.ZEUVASTEC_AVATAR_CONFIG = CONFIG;
 
 const stage = document.getElementById('tutor-stage');
+const IS_MOBILE = window.matchMedia('(max-width: 700px), (pointer: coarse)').matches;
 const node = document.getElementById('tutor-3d-avatar');
 const loading = document.getElementById('avatar-3d-loading');
 if (!stage || !node) throw new Error('Tutor avatar container not found');
@@ -61,7 +62,7 @@ async function initAvatar() {
     cameraRotateEnable: false,
     cameraZoomEnable: false,
     cameraPanEnable: false,
-    modelFPS: 60,
+    modelFPS: IS_MOBILE ? 30 : 60,
     avatarIdleEyeContact: 0.72,
     avatarSpeakingEyeContact: 0.9,
     avatarListeningEyeContact: 0.8,
@@ -179,7 +180,34 @@ async function initTTS() {
 
 window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
   if (!text) return;
-  if (!headtts || !head) {
+  if (!head) {
+    if (options.onEnd) options.onEnd();
+    return;
+  }
+
+  // Mobile stability: native speech is much lighter than loading the neural
+  // TTS worker/model, while the same 3D Avatar remains active on screen.
+  if (IS_MOBILE) {
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 500));
+      utterance.lang = 'en-US';
+      utterance.rate = Math.max(0.75, Math.min(1.15, Number(options.rate || 1.05)));
+      utterance.pitch = 1.0;
+      utterance.onstart = () => setState('speaking');
+      utterance.onend = () => { setState('normal'); if (options.onEnd) options.onEnd(); };
+      utterance.onerror = () => { setState('normal'); if (options.onEnd) options.onEnd(); };
+      setState('thinking');
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.error('[Zeuvastec Maya] mobile speech error', err);
+      setState('normal');
+      if (options.onEnd) options.onEnd();
+    }
+    return;
+  }
+
+  if (!headtts) {
     if (options.onEnd) options.onEnd();
     return;
   }
@@ -216,6 +244,7 @@ window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
 window.ZEUVASTEC_AVATAR_STOP = () => {
   try { head?.stopSpeaking?.(); } catch (e) {}
   try { headtts?.clear?.(); } catch (e) {}
+  try { window.speechSynthesis?.cancel?.(); } catch (e) {}
   if (speechEndTimer) { clearTimeout(speechEndTimer); speechEndTimer = null; }
   setState('normal');
   const cb = speechCallback;
@@ -235,7 +264,13 @@ stage.dataset.headIdleAnimation = 'true';
   try {
     await initAvatar();
     setState('normal');
-    await initTTS();
+    if (!IS_MOBILE) {
+      await initTTS();
+    } else {
+      // On mobile, keep the 3D Avatar lightweight and use the device's native
+      // speech engine to avoid WebGPU/WASM memory pressure and app restarts.
+      headtts = null;
+    }
     ready = true;
     window.ZEUVASTEC_AVATAR_READY = true;
     stage.classList.add('avatar-3d-ready');
@@ -247,11 +282,4 @@ stage.dataset.headIdleAnimation = 'true';
   }
 })();
 
-const mic = document.getElementById('mic-button');
-if (mic) {
-  mic.addEventListener('click', () => {
-    if (matchMedia('(max-width:700px)').matches) {
-      stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  });
-}
+// Microphone layout is handled by CSS; no scrollIntoView is used on mobile.

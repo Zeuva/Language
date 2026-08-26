@@ -26,3 +26,5 @@ O Zeuvastec deve manter a atribuição e confirmar que o uso pretendido permanec
 IMPORTANTE:
 A imagem maya-mini.png é somente uma miniatura/identidade visual. Ela NÃO é usada como avatar falante.
 O avatar falante é o GLB 3D carregado pelo TalkingHead.
+
+V11: mobile uses native device speech to reduce WebGPU/WASM memory pressure; desktop retains HeadTTS + audio-driven viseme lip-sync. 3D framing is fixed to prevent canvas growth. Service worker cache version bumped and old caches removed.
