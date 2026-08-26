@@ -150,3 +150,38 @@
     font-size:9px !important;
   }
 }
+
+
+/* V14 — stable avatar stage: no visual growth/zoom */
+#tutor-stage .tutor-avatar-wrap {
+  flex: 0 0 355px !important;
+  min-height: 355px !important;
+  max-height: 355px !important;
+  overflow: hidden !important;
+  transform: none !important;
+}
+#tutor-stage #tutor-3d-avatar {
+  flex: 0 0 min(100%,560px) !important;
+  min-width: 0 !important;
+  min-height: 355px !important;
+  max-height: 355px !important;
+  overflow: hidden !important;
+  transform: none !important;
+  contain: strict !important;
+}
+#tutor-stage #tutor-3d-avatar canvas {
+  transform: none !important;
+  transform-origin: center center !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+@media (max-width:700px) {
+  #tutor-stage { height: 360px !important; min-height:360px !important; max-height:360px !important; overflow:hidden !important; }
+  #tutor-stage .tutor-avatar-wrap { flex-basis: 285px !important; min-height:285px !important; max-height:285px !important; height:285px !important; }
+  #tutor-stage #tutor-3d-avatar { min-height:285px !important; max-height:285px !important; height:285px !important; width:100% !important; }
+}
+@media (max-width:420px) {
+  #tutor-stage { height:345px !important; min-height:345px !important; max-height:345px !important; }
+  #tutor-stage .tutor-avatar-wrap { flex-basis:270px !important; min-height:270px !important; max-height:270px !important; height:270px !important; }
+  #tutor-stage #tutor-3d-avatar { min-height:270px !important; max-height:270px !important; height:270px !important; }
+}

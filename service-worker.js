@@ -1,4 +1,4 @@
-const CACHE_NAME = 'zeuvastec-language-v11-mobile-stable';
+const CACHE_NAME = 'zeuvastec-language-v14-stable';
 const APP_FILES = [
   './', './index.html', './style.css', './voice.css', './fix.css', './levels.css', './profile.css',
   './home-redesign.css', './flashcard-flip.css', './hero-illustration.css',
