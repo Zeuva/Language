@@ -28,3 +28,5 @@ A imagem maya-mini.png é somente uma miniatura/identidade visual. Ela NÃO é u
 O avatar falante é o GLB 3D carregado pelo TalkingHead.
 
 V11: mobile uses native device speech to reduce WebGPU/WASM memory pressure; desktop retains HeadTTS + audio-driven viseme lip-sync. 3D framing is fixed to prevent canvas growth. Service worker cache version bumped and old caches removed.
+
+V13: fixed camera framing; HeadTTS audio is passed to TalkingHead with isRaw:true for tighter audio/viseme synchronization.

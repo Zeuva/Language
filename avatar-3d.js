@@ -75,7 +75,7 @@ async function initAvatar() {
     ttsEndpoint: 'N/A',
     lipsyncModules: [],
     cameraView: 'upper',
-    cameraDistance: -0.72,
+    cameraDistance: 0,
     cameraRotateEnable: false,
     cameraZoomEnable: false,
     cameraPanEnable: false,
@@ -108,7 +108,7 @@ async function initAvatar() {
 
   // Keep the framing close to the learner: face + shoulders, with room for mic below.
   head.setView('upper', {
-    cameraDistance: -0.72,
+    cameraDistance: 0,
     cameraX: 0,
     cameraY: 0.02,
     cameraRotateX: 0,
@@ -147,7 +147,7 @@ async function initTTS() {
       if (message.type === 'audio') {
         try {
           const audioData = message.data;
-          head.speakAudio(audioData, {}, () => {});
+          head.speakAudio(audioData, { isRaw: true }, () => {});
           if (speechEndTimer) clearTimeout(speechEndTimer);
           const wtimes = Array.isArray(audioData?.wtimes) ? audioData.wtimes : [];
           const wdurations = Array.isArray(audioData?.wdurations) ? audioData.wdurations : [];
@@ -261,8 +261,7 @@ window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
     // Não reinicializa o motor a cada frase: isso causava a pausa perceptível
     // antes da Maya começar a falar. O setup inicial já deixa o motor pronto.
     const requestedRate = Math.max(0.65, Math.min(1.15, Number(options.rate || 1.0)));
-    try { headtts.clear(); } catch (e) {}
-    // Reconfigure only when the requested speed actually changes. Re-running
+        // Reconfigure only when the requested speed actually changes. Re-running
     // setup for every sentence was the main source of the audible delay.
     if (configuredRate !== requestedRate) {
       await headtts.setup({

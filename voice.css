@@ -262,3 +262,31 @@
   .voice-controls .mic{position:relative;z-index:101}
 }
 \n\n/* V11 — mobile stability and fixed 3D framing */\n.tutor-stage, .tutor-avatar-wrap, .tutor-3d-avatar { box-sizing:border-box; }\n.tutor-stage { overflow:hidden !important; }\n.tutor-avatar-wrap { overflow:hidden !important; flex:0 0 auto !important; }\n.tutor-3d-avatar { flex:0 0 auto !important; transform:none !important; contain:layout paint size; }\n.tutor-3d-avatar canvas { transform:none !important; transform-origin:center center !important; }\n.tutor-stage[data-state="speaking"] .tutor-3d-avatar,\n.tutor-stage[data-state="listening"] .tutor-3d-avatar,\n.tutor-stage[data-state="thinking"] .tutor-3d-avatar { transform:none !important; animation:none !important; }\n@media (max-width:700px) {\n  .content { padding-bottom:16px !important; }\n  .voice-room { overflow:hidden !important; }\n  .tutor-stage { height:360px !important; min-height:360px !important; }\n  .tutor-avatar-wrap { height:285px !important; min-height:285px !important; max-height:285px !important; }\n  .tutor-3d-avatar { height:285px !important; min-height:285px !important; max-height:285px !important; }\n  .tutor-3d-avatar canvas { width:100% !important; height:100% !important; }\n  .voice-controls { margin-top:-30px !important; position:relative !important; z-index:50 !important; }\n  .voice-controls .mic { width:70px !important; height:70px !important; }\n  .conversation-panel { height:92px !important; min-height:92px !important; }\n}\n@media (max-width:420px) {\n  .tutor-stage { height:345px !important; min-height:345px !important; }\n  .tutor-avatar-wrap { height:270px !important; min-height:270px !important; max-height:270px !important; }\n  .tutor-3d-avatar { height:270px !important; min-height:270px !important; max-height:270px !important; }\n}\n
+
+/* V13 — fixed desktop/mobile framing and real HeadTTS viseme timing */
+.tutor-3d-avatar,
+.tutor-3d-avatar canvas {
+  transform: none !important;
+  transform-origin: center center !important;
+}
+.tutor-stage[data-state="speaking"] .tutor-3d-avatar,
+.tutor-stage[data-state="listening"] .tutor-3d-avatar,
+.tutor-stage[data-state="thinking"] .tutor-3d-avatar {
+  transform: none !important;
+  animation: none !important;
+}
+@media (min-width: 701px) {
+  .tutor-avatar-wrap { height: 390px !important; flex: 0 0 390px !important; }
+  .tutor-3d-avatar { height: 390px !important; max-height: 390px !important; }
+}
+@media (max-width: 700px) {
+  .tutor-stage { min-height: 400px !important; height: 400px !important; max-height: 400px !important; }
+  .tutor-avatar-wrap { height: 315px !important; min-height: 315px !important; max-height: 315px !important; flex: 0 0 315px !important; }
+  .tutor-3d-avatar { height: 315px !important; max-height: 315px !important; }
+  .tutor-3d-avatar canvas { width: 100% !important; height: 100% !important; }
+}
+@media (max-width: 420px) {
+  .tutor-stage { min-height: 375px !important; height: 375px !important; max-height: 375px !important; }
+  .tutor-avatar-wrap { height: 292px !important; min-height: 292px !important; max-height: 292px !important; flex-basis: 292px !important; }
+  .tutor-3d-avatar { height: 292px !important; max-height: 292px !important; }
+}
