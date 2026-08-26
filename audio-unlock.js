@@ -7,7 +7,6 @@
     if(typeof soundOn !== 'undefined' && !soundOn) return;
     if(!window.speechSynthesis) return;
     console.log('[AUDIO] Desbloqueando áudio');
-    window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
     // iOS audio context unlock
     try{
@@ -23,17 +22,8 @@
       }
     }catch(e){}
     
-    setTimeout(() => {
-      const test = new SpeechSynthesisUtterance('Audio is ready. Let us learn English.');
-      test.lang = 'en-US';
-      test.rate = 0.9;
-      test.volume = 0.01; // quase silencioso para desbloqueio
-      const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find((item) => /^en(-|_)/i.test(item.lang));
-      if (voice) test.voice = voice;
-      window.speechSynthesis.speak(test);
-      setTimeout(()=> window.speechSynthesis.cancel(), 200);
-    }, 100);
+    // Do not enqueue/cancel a hidden test utterance on iOS; it can interrupt the real tutor speech.
+
   }
 
   if(soundBtn){

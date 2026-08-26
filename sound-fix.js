@@ -5,7 +5,7 @@
   const refresh = () => { voices = speech.getVoices(); };
   refresh(); speech.addEventListener?.('voiceschanged', refresh);
   window.addEventListener('pageshow', () => { refresh(); speech.resume(); });
-  function unlock(){ try{ speech.cancel(); speech.resume(); }catch(_){} }
+  function unlock(){ try{ speech.resume(); }catch(_){} }
   document.addEventListener('pointerdown', unlock, {passive:true,capture:true});
   document.addEventListener('touchstart', unlock, {passive:true,capture:true});
   function say(text,lang){

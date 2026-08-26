@@ -175,17 +175,40 @@ async function initTTS() {
   finally { ttsInitializing = null; }
 }
 
-function startFallbackFace(text, rate=1.05) {
+function visemesForWord(word) {
+  const w = String(word || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (!w) return ['sil'];
+  const map = [];
+  for (const ch of w) {
+    if ('aeiou'.includes(ch)) {
+      map.push(ch === 'a' ? 'aa' : ch === 'e' ? 'E' : ch === 'i' ? 'I' : ch === 'o' ? 'O' : 'U');
+    } else if ('bmp'.includes(ch)) map.push('PP');
+    else if ('fv'.includes(ch)) map.push('FF');
+    else if ('sz'.includes(ch)) map.push('SS');
+    else if (ch === 't' || ch === 'd') map.push('DD');
+    else if (ch === 'k' || ch === 'g' || ch === 'q') map.push('kk');
+    else if (ch === 'n') map.push('nn');
+    else if (ch === 'r') map.push('RR');
+    else if (ch === 'l') map.push('DD');
+    else if (ch === 'c' || ch === 'j') map.push('CH');
+    else if (ch === 'h') map.push('TH');
+    else map.push('sil');
+  }
+  return map.slice(0, 8);
+}
+
+function animateWordVisemes(word, durationMs = 260) {
   if (!head) return;
-  stopFallbackFace();
-  setState('speaking');
-  const seq = ['aa','E','I','O','U','PP','SS','TH','kk','nn','RR','DD','FF','CH'];
+  const seq = visemesForWord(word);
+  const step = Math.max(45, Math.floor(Math.max(90, durationMs) / Math.max(1, seq.length)));
   let i = 0;
-  const interval = Math.max(65, Math.round(95 / Math.max(.75, Math.min(1.2, rate))));
-  fallbackVisemeTimer = setInterval(() => {
-    try { head.setFixedValue('viseme_' + seq[i++ % seq.length], interval / 1000); } catch(e) {}
-  }, interval);
-  return interval;
+  stopFallbackFace();
+  const tick = () => {
+    if (!head || i >= seq.length) { fallbackVisemeTimer = null; return; }
+    try { head.setFixedValue('viseme_' + seq[i++], step / 1000); } catch (e) {}
+    fallbackVisemeTimer = setTimeout(tick, step);
+  };
+  tick();
 }
 function stopFallbackFace() {
   if (fallbackVisemeTimer) { clearInterval(fallbackVisemeTimer); fallbackVisemeTimer = null; }
@@ -198,26 +221,69 @@ window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
     return;
   }
 
-  // Mobile: use the device TTS immediately for stability and low latency.
-  // The TalkingHead face is driven by a lightweight text-timed viseme animation.
-  // Full HeadTTS/phoneme lip-sync remains enabled on desktop where WebGPU is available.
+  // Mobile: use the device TTS for stability/latency, but drive the face from
+  // SpeechSynthesis word-boundary events instead of an unrelated free-running mouth loop.
+  // Native mobile TTS does not expose phoneme/viseme timestamps, so this is the closest
+  // browser-local synchronization path without a paid/server TTS service.
   if (MOBILE_NATIVE_TTS) {
     try {
+      stopFallbackFace();
       window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+
       const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 500));
       utterance.lang = 'en-US';
       utterance.rate = Math.max(0.85, Math.min(1.15, Number(options.rate || 1.05)));
       utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
       const voices = window.speechSynthesis.getVoices();
-      const female = voices.find(v => /en-US|en_US/i.test(v.lang) && /female|samantha|ava|aria|jenny|zira|susan|sara/i.test(v.name));
+      const female = voices.find(v => /^(en-US|en_US)$/i.test(v.lang) && /female|samantha|ava|aria|jenny|zira|susan|sara/i.test(v.name))
+        || voices.find(v => /^en-US/i.test(v.lang))
+        || voices.find(v => /^en/i.test(v.lang));
       if (female) utterance.voice = female;
+
       speechCallback = options.onEnd || null;
       setState('speaking');
-      startFallbackFace(text, utterance.rate);
-      utterance.onstart = () => setState('speaking');
-      utterance.onend = () => { stopFallbackFace(); setState('normal'); const cb=speechCallback; speechCallback=null; if(cb) cb(); };
-      utterance.onerror = () => { stopFallbackFace(); setState('normal'); const cb=speechCallback; speechCallback=null; if(cb) cb(); };
+      let lastBoundaryMs = 0;
+      let boundaryCount = 0;
+      const words = String(text).trim().split(/\s+/);
+
+      utterance.onstart = () => {
+        try { window.speechSynthesis.resume(); } catch (e) {}
+        setState('speaking');
+        if (words[0]) animateWordVisemes(words[0], 260);
+      };
+
+      utterance.onboundary = (event) => {
+        if (event.name && event.name !== 'word') return;
+        const now = Number(event.elapsedTime || 0) * 1000;
+        const index = Math.max(0, Number(event.charIndex || 0));
+        const before = String(text).slice(0, index);
+        const wordIndex = before.trim() ? before.trim().split(/\s+/).length : 0;
+        const word = String(text).slice(index).split(/\s+/)[0] || words[wordIndex] || '';
+        const delta = lastBoundaryMs ? Math.max(80, now - lastBoundaryMs) : 260;
+        lastBoundaryMs = now;
+        boundaryCount++;
+        animateWordVisemes(word, delta);
+      };
+
+      const finish = () => {
+        stopFallbackFace();
+        try { head.setFixedValue('viseme_sil', 0.12); } catch (e) {}
+        setState('normal');
+        const cb = speechCallback; speechCallback = null; if (cb) cb();
+      };
+      utterance.onend = finish;
+      utterance.onerror = (event) => {
+        console.warn('[Zeuvastec Maya] mobile speech error', event?.error);
+        finish();
+      };
+
+      // Do not delay the speak call and do not run a hidden test utterance on iOS.
+      // Safari is sensitive to cancellation/queued utterances.
       window.speechSynthesis.speak(utterance);
+      window.setTimeout(() => { try { window.speechSynthesis.resume(); } catch (e) {} }, 50);
       return;
     } catch (err) {
       console.warn('[Zeuvastec Maya] mobile native TTS failed', err);
