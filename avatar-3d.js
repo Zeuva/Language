@@ -33,6 +33,9 @@ let initialized = false;
 let speechCallback = null;
 let configuredRate = null;
 let speechEndTimer = null;
+let ttsInitializing = null;
+let mobileNativeFallback = false;
+let fallbackVisemeTimer = null;
 
 function setLoading(text, visible = true) {
   if (!loading) return;
@@ -48,7 +51,21 @@ function setState(state) {
 function setAvatarError(message) {
   stage.classList.add('avatar-3d-error');
   setLoading(message, true);
-  window.ZEUVASTEC_AVATAR_READY = false;
+  // On mobile, use the first real user interaction with the microphone as a
+// safe point to start loading HeadTTS WASM in the background. This prevents
+// the old native-speech-only path (which had no viseme stream) while avoiding
+// a heavy model load during initial page startup.
+if (IS_MOBILE) {
+  const warmup = () => {
+    initTTS().catch((err) => console.warn('[Zeuvastec Maya] mobile TTS warmup failed', err));
+  };
+  document.addEventListener('pointerdown', (ev) => {
+    const target = ev.target;
+    if (target && (target.id === 'mic-button' || target.closest?.('#mic-button'))) warmup();
+  }, { once: true, passive: true });
+}
+
+window.ZEUVASTEC_AVATAR_READY = false;
 }
 
 async function initAvatar() {
@@ -103,79 +120,80 @@ async function initAvatar() {
 }
 
 async function initTTS() {
-  setLoading('Preparando voz da Maya + lip-sync…');
-  headtts = new HeadTTS({
-    endpoints: ['webgpu', 'wasm'],
-    languages: ['en-us'],
-    voices: ['af_bella'],
-    audioCtx: head.audioCtx,
-    workerModule: 'https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.3/modules/worker-tts.mjs',
-    dictionaryURL: 'https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.3/dictionaries/',
-    trace: 0
-  });
+  if (headtts) return headtts;
+  if (ttsInitializing) return ttsInitializing;
+  setLoading('Preparando voz + lip-sync…');
+  ttsInitializing = (async () => {
+    const endpoints = IS_MOBILE ? ['wasm'] : ['webgpu', 'wasm'];
+    headtts = new HeadTTS({
+      endpoints,
+      languages: ['en-us'],
+      voices: ['af_bella'],
+      audioCtx: head.audioCtx,
+      workerModule: 'https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.3/modules/worker-tts.mjs',
+      dictionaryURL: 'https://cdn.jsdelivr.net/npm/@met4citizen/headtts@1.3/dictionaries/',
+      trace: 0
+    });
 
-  headtts.onstart = () => setState('speaking');
-  headtts.onend = () => {
-    // HeadTTS onend marks synthesis completion, not necessarily the end of
-    // playback. The actual listening transition is scheduled from the
-    // viseme/word duration in the audio message below.
-  };
-  headtts.onerror = (err) => {
-    console.error('[Zeuvastec Maya] HeadTTS error', err);
-    setState('normal');
-    const cb = speechCallback;
-    speechCallback = null;
-    if (cb) cb();
-  };
-
-  headtts.onmessage = (message) => {
-    if (message.type === 'audio') {
-      try {
-        // HeadTTS returns the audio object already containing words + visemes + timestamps.
-        // TalkingHead synchronizes the entire facial animation to the audio clock.
-        const audioData = message.data;
-        head.speakAudio(audioData, {}, () => {});
-
-        // Schedule the callback for the end of the actual spoken audio.
-        // This avoids opening the microphone while Maya is still speaking.
-        if (speechEndTimer) clearTimeout(speechEndTimer);
-        const wtimes = Array.isArray(audioData?.wtimes) ? audioData.wtimes : [];
-        const wdurations = Array.isArray(audioData?.wdurations) ? audioData.wdurations : [];
-        const vtimes = Array.isArray(audioData?.vtimes) ? audioData.vtimes : [];
-        const vdurations = Array.isArray(audioData?.vdurations) ? audioData.vdurations : [];
-        const wordEnd = wtimes.length ? Math.max(...wtimes.map((t,i)=>Number(t||0)+Number(wdurations[i]||0))) : 0;
-        const visemeEnd = vtimes.length ? Math.max(...vtimes.map((t,i)=>Number(t||0)+Number(vdurations[i]||0))) : 0;
-        const estimatedMs = Math.max(wordEnd, visemeEnd, 250);
-        speechEndTimer = setTimeout(() => {
-          speechEndTimer = null;
-          setState('normal');
-          const cb = speechCallback;
-          speechCallback = null;
-          if (cb) cb();
-        }, estimatedMs + 120);
-      } catch (err) {
-        console.error('[Zeuvastec Maya] speakAudio error', err);
-        setState('normal');
-        const cb = speechCallback;
-        speechCallback = null;
-        if (cb) cb();
-      }
-    } else if (message.type === 'error') {
-      console.error('[Zeuvastec Maya] HeadTTS message error', message.data?.error || message.data);
+    headtts.onstart = () => setState('speaking');
+    headtts.onend = () => {};
+    headtts.onerror = (err) => {
+      console.error('[Zeuvastec Maya] HeadTTS error', err);
+      mobileNativeFallback = true;
       setState('normal');
-      const cb = speechCallback;
-      speechCallback = null;
-      if (cb) cb();
-    }
-  };
+      const cb = speechCallback; speechCallback = null; if (cb) cb();
+    };
+    headtts.onmessage = (message) => {
+      if (message.type === 'audio') {
+        try {
+          const audioData = message.data;
+          head.speakAudio(audioData, {}, () => {});
+          if (speechEndTimer) clearTimeout(speechEndTimer);
+          const wtimes = Array.isArray(audioData?.wtimes) ? audioData.wtimes : [];
+          const wdurations = Array.isArray(audioData?.wdurations) ? audioData.wdurations : [];
+          const vtimes = Array.isArray(audioData?.vtimes) ? audioData.vtimes : [];
+          const vdurations = Array.isArray(audioData?.vdurations) ? audioData.vdurations : [];
+          const wordEnd = wtimes.length ? Math.max(...wtimes.map((t,i)=>Number(t||0)+Number(wdurations[i]||0))) : 0;
+          const visemeEnd = vtimes.length ? Math.max(...vtimes.map((t,i)=>Number(t||0)+Number(vdurations[i]||0))) : 0;
+          const estimatedMs = Math.max(wordEnd, visemeEnd, 250);
+          speechEndTimer = setTimeout(() => {
+            speechEndTimer = null; setState('normal');
+            const cb = speechCallback; speechCallback = null; if (cb) cb();
+          }, estimatedMs + 120);
+        } catch (err) {
+          console.error('[Zeuvastec Maya] speakAudio error', err);
+          setState('normal'); const cb = speechCallback; speechCallback = null; if (cb) cb();
+        }
+      } else if (message.type === 'error') {
+        console.error('[Zeuvastec Maya] HeadTTS message error', message.data?.error || message.data);
+        mobileNativeFallback = true; setState('normal');
+        const cb = speechCallback; speechCallback = null; if (cb) cb();
+      }
+    };
+    await headtts.connect();
+    await headtts.setup({ voice: CONFIG.voice, language: CONFIG.language, speed: 1.05, audioEncoding: 'wav' });
+    configuredRate = 1.05;
+    setLoading('', false);
+    return headtts;
+  })();
+  try { return await ttsInitializing; }
+  finally { ttsInitializing = null; }
+}
 
-  await headtts.connect();
-  await headtts.setup({
-    voice: CONFIG.voice,
-    language: CONFIG.language,
-    speed: 1.0,
-    audioEncoding: 'wav'
-  });
+function startFallbackFace(text, rate=1.05) {
+  if (!head) return;
+  stopFallbackFace();
+  setState('speaking');
+  const seq = ['aa','E','I','O','U','PP','SS','TH','kk','nn','RR','DD','FF','CH'];
+  let i = 0;
+  const interval = Math.max(65, Math.round(95 / Math.max(.75, Math.min(1.2, rate))));
+  fallbackVisemeTimer = setInterval(() => {
+    try { head.setFixedValue('viseme_' + seq[i++ % seq.length], interval / 1000); } catch(e) {}
+  }, interval);
+  return interval;
+}
+function stopFallbackFace() {
+  if (fallbackVisemeTimer) { clearInterval(fallbackVisemeTimer); fallbackVisemeTimer = null; }
 }
 
 window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
@@ -185,24 +203,48 @@ window.ZEUVASTEC_AVATAR_SPEAK = async (text, options = {}) => {
     return;
   }
 
-  // Mobile stability: native speech is much lighter than loading the neural
-  // TTS worker/model, while the same 3D Avatar remains active on screen.
-  if (IS_MOBILE) {
+  // Mobile: use HeadTTS WASM lazily so the same audio drives TalkingHead lip-sync.
+  // This avoids the previous native-speech path, which could speak but had no audio
+  // stream/timestamps available to animate the mouth.
+  if (IS_MOBILE && !mobileNativeFallback) {
+    try {
+      await initTTS();
+      if (headtts) {
+        speechCallback = options.onEnd || null;
+        setState('thinking');
+        if (speechEndTimer) { clearTimeout(speechEndTimer); speechEndTimer = null; }
+        const requestedRate = Math.max(0.8, Math.min(1.15, Number(options.rate || 1.05)));
+        if (configuredRate !== requestedRate) {
+          await headtts.setup({ voice: CONFIG.voice, language: CONFIG.language, speed: requestedRate, audioEncoding: 'wav' });
+          configuredRate = requestedRate;
+        }
+        headtts.synthesize({ input: String(text).slice(0, 500) });
+        return;
+      }
+    } catch (err) {
+      console.warn('[Zeuvastec Maya] mobile HeadTTS unavailable, using native fallback', err);
+      mobileNativeFallback = true;
+    }
+  }
+
+  // Emergency fallback only: native speech plus a visible mouth animation.
+  // The normal mobile path above remains fully audio/viseme-driven.
+  if (IS_MOBILE && mobileNativeFallback) {
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(String(text).slice(0, 500));
       utterance.lang = 'en-US';
-      utterance.rate = Math.max(0.75, Math.min(1.15, Number(options.rate || 1.05)));
+      utterance.rate = Math.max(0.8, Math.min(1.15, Number(options.rate || 1.05)));
       utterance.pitch = 1.0;
+      const durationEstimate = Math.max(900, String(text).split(/\s+/).length * 330 / utterance.rate);
+      startFallbackFace(text, utterance.rate);
       utterance.onstart = () => setState('speaking');
-      utterance.onend = () => { setState('normal'); if (options.onEnd) options.onEnd(); };
-      utterance.onerror = () => { setState('normal'); if (options.onEnd) options.onEnd(); };
+      utterance.onend = () => { stopFallbackFace(); setState('normal'); if (options.onEnd) options.onEnd(); };
+      utterance.onerror = () => { stopFallbackFace(); setState('normal'); if (options.onEnd) options.onEnd(); };
       setState('thinking');
       window.speechSynthesis.speak(utterance);
     } catch (err) {
-      console.error('[Zeuvastec Maya] mobile speech error', err);
-      setState('normal');
-      if (options.onEnd) options.onEnd();
+      stopFallbackFace(); setState('normal'); if (options.onEnd) options.onEnd();
     }
     return;
   }
@@ -252,6 +294,20 @@ window.ZEUVASTEC_AVATAR_STOP = () => {
   if (cb) cb();
 };
 
+// On mobile, use the first real user interaction with the microphone as a
+// safe point to start loading HeadTTS WASM in the background. This prevents
+// the old native-speech-only path (which had no viseme stream) while avoiding
+// a heavy model load during initial page startup.
+if (IS_MOBILE) {
+  const warmup = () => {
+    initTTS().catch((err) => console.warn('[Zeuvastec Maya] mobile TTS warmup failed', err));
+  };
+  document.addEventListener('pointerdown', (ev) => {
+    const target = ev.target;
+    if (target && (target.id === 'mic-button' || target.closest?.('#mic-button'))) warmup();
+  }, { once: true, passive: true });
+}
+
 window.ZEUVASTEC_AVATAR_READY = false;
 stage.dataset.isTalkingPhoto = 'false';
 stage.dataset.fullFacialAnimation = 'true';
@@ -266,11 +322,9 @@ stage.dataset.headIdleAnimation = 'true';
     setState('normal');
     if (!IS_MOBILE) {
       await initTTS();
-    } else {
-      // On mobile, keep the 3D Avatar lightweight and use the device's native
-      // speech engine to avoid WebGPU/WASM memory pressure and app restarts.
-      headtts = null;
     }
+    // On mobile the TTS/lip-sync engine is loaded lazily, after the user has
+    // interacted with the conversation, to avoid the startup memory spike.
     ready = true;
     window.ZEUVASTEC_AVATAR_READY = true;
     stage.classList.add('avatar-3d-ready');
